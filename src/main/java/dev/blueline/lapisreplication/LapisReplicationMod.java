@@ -21,5 +21,6 @@ public final class LapisReplicationMod {
     public LapisReplicationMod(IEventBus modEventBus) {
         RECIPE_SERIALIZERS.register(modEventBus);
         NeoForge.EVENT_BUS.addListener(CraftingEvents::onItemCrafted);
+        NeoForge.EVENT_BUS.addListener(CannedFoodEvents::onItemFinished);
     }
 }
