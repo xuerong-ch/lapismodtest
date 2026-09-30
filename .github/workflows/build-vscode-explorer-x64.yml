@@ -1,0 +1,71 @@
+name: Build VS Code Explorer x64
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/build-vscode-explorer-x64.yml"
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout official Microsoft source
+        shell: pwsh
+        run: |
+          git clone --recursive https://github.com/microsoft/vscode-explorer-command.git src
+
+      - name: Configure MSVC x64
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Build stable x64 DLL
+        shell: cmd
+        working-directory: src
+        run: >
+          cl /nologo /LD /O2 /EHsc /std:c++17
+          /D_WINDLL
+          /DWIN32_LEAN_AND_MEAN
+          /D_UNICODE
+          /DUNICODE
+          /D_CRT_SECURE_NO_DEPRECATE
+          /D_CRT_NONSTDC_NO_DEPRECATE
+          /DEXE_NAME=\"Code.exe\"
+          /DDLL_UUID=\"1C6DF0C0-192A-4451-BE36-6A59A86A692E\"
+          /Ideps\wil\include
+          src\explorer_command.cc
+          /link
+          /DEF:src\explorer_command.def
+          /OUT:code_explorer_command_x64.dll
+          advapi32.lib
+          runtimeobject.lib
+          shlwapi.lib
+          onecore.lib
+          /MACHINE:X64
+
+      - name: Verify PE architecture is x64
+        shell: pwsh
+        working-directory: src
+        run: |
+          $dll = Join-Path $PWD "code_explorer_command_x64.dll"
+          if (!(Test-Path $dll)) { throw "DLL was not produced" }
+
+          $bytes = [System.IO.File]::ReadAllBytes($dll)
+          $peOffset = [BitConverter]::ToInt32($bytes, 0x3C)
+          $machine = [BitConverter]::ToUInt16($bytes, $peOffset + 4)
+
+          Write-Host ("PE Machine = 0x{0:X4}" -f $machine)
+          if ($machine -ne 0x8664) {
+            throw ("Expected x64 (0x8664), got 0x{0:X4}" -f $machine)
+          }
+
+          Get-FileHash $dll -Algorithm SHA256
+
+      - name: Upload DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-explorer-command-x64
+          path: src/code_explorer_command_x64.dll
+          if-no-files-found: error
