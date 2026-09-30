@@ -16,9 +16,13 @@ jobs:
         shell: pwsh
         run: |
           $p = 'work/SevenZipModernContext/src/ExplorerCommand.cpp'
-          $s = Get-Content $p -Raw
-          $s = $s.Replace('guidCommandNameptrCLSID_ExtractHere', '*guidCommandName = CLSID_ExtractHere;')
-          Set-Content -Path $p -Value $s -Encoding utf8
+          $lines = Get-Content $p
+          for ($i = 0; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -like '*guidCommandName*CLSID_ExtractHere*') {
+              $lines[$i] = '        *guidCommandName = CLSID_ExtractHere;'
+            }
+          }
+          Set-Content -Path $p -Value $lines -Encoding utf8
 
       - name: Configure x64
         working-directory: work/SevenZipModernContext
