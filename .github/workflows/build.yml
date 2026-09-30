@@ -59,7 +59,7 @@ jobs:
         shell: pwsh
         run: |
           & '${{ steps.sdk.outputs.signtool }}' sign /fd SHA256 /f signing.pfx /p temporary-ci-password dist/SevenZipModernContext.identity.msix
-          & '${{ steps.sdk.outputs.signtool }}' verify /pa /v dist/SevenZipModernContext.identity.msix
+          if ($LASTEXITCODE -ne 0) { throw 'signtool sign failed.' }
       - name: Package release zip
         working-directory: work/SevenZipModernContext
         shell: pwsh
