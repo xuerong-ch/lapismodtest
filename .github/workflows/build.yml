@@ -12,6 +12,14 @@ jobs:
       - name: Expand source
         shell: pwsh
         run: Expand-Archive -Path SevenZipModernContext-source.zip -DestinationPath work -Force
+      - name: Repair diagnostic source transfer
+        shell: pwsh
+        run: |
+          $p = 'work/SevenZipModernContext/src/ExplorerCommand.cpp'
+          $s = Get-Content $p -Raw
+          $s = $s.Replace('guidCommandNameptrCLSID_ExtractHere', '*guidCommandName = CLSID_ExtractHere;')
+          Set-Content -Path $p -Value $s -Encoding utf8
+
       - name: Configure x64
         working-directory: work/SevenZipModernContext
         run: cmake -S . -B build -A x64
